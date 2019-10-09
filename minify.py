@@ -7,7 +7,7 @@ import sre_constants
 
 INLINE_COMMENT = compile('//+[^\n]+')
 BLOCK_COMMENT = compile('/\*.*?\*/', DOTALL)
-WHITESPACE_REGEX = r"(?:\/\*(?:(?!\*\/)(?:.|\n))*\*\/\n|\ {2,}|\t)"
+STRIP_REGEX = r"(?:\/\*(?:(?!\*\/)(?:.|\n))*\*\/\n|\ {2,}|\t|^\n|\ *$|\ *\/\/[^\n]*\n)"
 
 def load_code(path_or_code: (Path, str)):
     """If passed a file path, loads code from that file. Else, returns its input."""
@@ -18,14 +18,9 @@ def load_code(path_or_code: (Path, str)):
 
     return path_or_code
     
-def strip_spaces(text: str) -> str:
-    """Removes whitespace indentation"""
-    text = sub(WHITESPACE_REGEX, '', text).replace('\n\n', '\n');
-    return text
-    
-def strip_comments(text: str) -> str:
-    """Removes SQF-style comments and block comments."""
-    text = sub(INLINE_COMMENT, '', text)
+def strip(text: str) -> str:
+    """Removes block quotes, comments, whitespace, indentation."""
+    text = sub(STRIP_REGEX, '', text).replace('\n\n', '\n');
     return text
 
 def minify_file(file_in: (Path, str), file_out: (Path, str, bool, None) = False) -> str:
@@ -38,7 +33,7 @@ def minify_file(file_in: (Path, str), file_out: (Path, str, bool, None) = False)
     with open(file_in) as f:
         text = f.read()
 
-    text = strip_comments(text)
+    text = strip(text)
     
     output = ''
     for line in text.splitlines():
@@ -47,7 +42,8 @@ def minify_file(file_in: (Path, str), file_out: (Path, str, bool, None) = False)
         else:
             output += line
     
-    output = strip_spaces(output)
+    if output[:1] == '\n':
+        output = output[1:]
     
     if file_out:
         with open(file_out, 'w') as f:
