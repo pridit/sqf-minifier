@@ -2,12 +2,12 @@
 # -*- coding: UTF-8 -*-
 """Minifies an SQF file."""
 from pathlib import Path
-from re import sub, compile, DOTALL, MULTILINE
+from re import sub, compile, DOTALL
 import sre_constants
 
 INLINE_COMMENT = compile('//+[^\n]+')
 BLOCK_COMMENT = compile('/\*.*?\*/', DOTALL)
-STRIP_REGEX = compile(r"(?:\/\*(?:(?!\*\/)(?:.|\n))*\*\/\n|\ {2,}|\t|^\n|\ *$|\ *\/\/[^\n]*\n)", MULTILINE)
+WHITESPACE_REGEX = r"(?:\/\*(?:(?!\*\/)(?:.|\n))*\*\/\n|\ {2,}|\t)"
 
 def load_code(path_or_code: (Path, str)):
     """If passed a file path, loads code from that file. Else, returns its input."""
@@ -18,9 +18,14 @@ def load_code(path_or_code: (Path, str)):
 
     return path_or_code
     
-def strip(text: str) -> str:
-    """Removes block quotes, comments, whitespace, indentation."""
-    text = STRIP_REGEX.sub('', text).replace('\n\n', '\n')
+def strip_spaces(text: str) -> str:
+    """Removes whitespace indentation"""
+    text = sub(WHITESPACE_REGEX, '', text).replace('\n\n', '\n');
+    return text
+    
+def strip_comments(text: str) -> str:
+    """Removes SQF-style comments and block comments."""
+    text = sub(INLINE_COMMENT, '', text)
     return text
 
 def minify_file(file_in: (Path, str), file_out: (Path, str, bool, None) = False) -> str:
@@ -33,7 +38,7 @@ def minify_file(file_in: (Path, str), file_out: (Path, str, bool, None) = False)
     with open(file_in) as f:
         text = f.read()
 
-    text = strip(text)
+    text = strip_comments(text)
     
     output = ''
     for line in text.splitlines():
@@ -41,6 +46,8 @@ def minify_file(file_in: (Path, str), file_out: (Path, str, bool, None) = False)
             output += f'\n{line}\n'
         else:
             output += line
+    
+    output = strip_spaces(output)
     
     if output[:1] == '\n':
         output = output[1:]
