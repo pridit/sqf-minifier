@@ -26,6 +26,7 @@ def strip_spaces(text: str) -> str:
 def strip_comments(text: str) -> str:
     """Removes SQF-style comments and block comments."""
     text = sub(INLINE_COMMENT, '', text)
+    text = sub(BLOCK_COMMENT, '', text)
     return text
 
 def minify_file(file_in: (Path, str), file_out: (Path, str, bool, None) = False) -> str:
